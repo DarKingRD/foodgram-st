@@ -1,5 +1,4 @@
 from django.db import models
-
 from django.contrib.auth import get_user_model
 from django.utils.timezone import now
 
@@ -30,6 +29,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='recipes',
         verbose_name='Автор')
     name = models.CharField(
         max_length=256,
@@ -40,6 +40,10 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Описание')
     cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления (мин)')
+    date_published = models.DateTimeField(
+        default=now,
+        verbose_name='Дата публикации'
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -55,10 +59,12 @@ class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='favorites',
         verbose_name='Пользователь')
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name='favorites',
         verbose_name='Рецепт')
 
     class Meta:
@@ -75,10 +81,12 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='subscriptions',
         verbose_name='Пользователь')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='subscribers',
         verbose_name='Автор')
     recipes_count = models.IntegerField(verbose_name='Кол-во рецептов')
 
@@ -97,11 +105,13 @@ class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='shopping_carts',
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name='shopping_carts',
         verbose_name='Рецепт')
 
     class Meta:
@@ -118,10 +128,12 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name='recipe_ingredients',
         verbose_name='Рецепт')
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
+        related_name='recipe_ingredients',
         verbose_name='Ингредиент')
     amount = models.IntegerField(verbose_name='Количество')
 
@@ -139,6 +151,7 @@ class Profile(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
+        related_name='profiles',
         verbose_name='Пользователь')
     avatar = models.ImageField(
         upload_to='avatars/',
