@@ -88,7 +88,10 @@ class Subscription(models.Model):
         on_delete=models.CASCADE,
         related_name='subscribers',
         verbose_name='Автор')
-    recipes_count = models.IntegerField(verbose_name='Кол-во рецептов')
+    recipes_count = models.IntegerField(
+        default=0,
+        verbose_name='Кол-во рецептов'
+    )
 
     class Meta:
         unique_together = ['user', 'author']
