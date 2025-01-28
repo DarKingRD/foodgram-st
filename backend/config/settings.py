@@ -100,7 +100,7 @@ if 'test' in sys.argv and DEBUG:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'mydatabase'
-    } 
+    }
 
 
 AUTHENTICATION_BACKENDS = [
