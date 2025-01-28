@@ -207,11 +207,13 @@ class RecipeSerializer(serializers.ModelSerializer):
                 "Должен быть хотя бы один ингредиент."
             )
 
-        ingredient_ids = {ingredient['ingredient']['id'] for ingredient in ingredients}
+        ingredient_ids = {
+            ingredient['ingredient']['id'] for ingredient in ingredients}
 
         existing_ingredients = Ingredient.objects.filter(id__in=ingredient_ids)
         if len(existing_ingredients) != len(ingredient_ids):
-            missing_ids = ingredient_ids - set(existing_ingredients.values_list('id', flat=True))
+            missing_ids = ingredient_ids - set(
+                existing_ingredients.values_list('id', flat=True))
             raise serializers.ValidationError(
                 f"Ингредиенты с id {missing_ids} не существуют."
             )
