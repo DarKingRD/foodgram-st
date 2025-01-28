@@ -51,10 +51,9 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ['-date_published']
-    
+
     def get_absolute_url(self):
         return reverse('recipe-detail', kwargs={'pk': self.pk})
-
 
     def __str__(self):
         return self.name
@@ -176,6 +175,7 @@ class Profile(models.Model):
         return f'Профиль {self.user.username}'
 
 
+# Модель короткой ссылки
 class ShortLink(models.Model):
     original_url = models.URLField()
     short_code = models.CharField(max_length=10, unique=True)

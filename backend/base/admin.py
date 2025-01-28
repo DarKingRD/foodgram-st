@@ -3,7 +3,8 @@ from import_export.admin import ImportExportModelAdmin
 from import_export.resources import ModelResource
 from .models import (
     Ingredient, Recipe, RecipeIngredient,
-    Favorite, ShoppingCart, Subscription, Profile
+    Favorite, ShoppingCart, Subscription, Profile,
+    ShortLink
 )
 from django.contrib.auth import get_user_model
 
@@ -85,3 +86,8 @@ class SubscriptionAdmin(admin.ModelAdmin):
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'avatar')
+
+
+@admin.register(ShortLink)
+class ShortLinkAdmin(admin.ModelAdmin):
+    list_display = ('original_url', 'short_code')
