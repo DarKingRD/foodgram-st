@@ -7,9 +7,11 @@ from rest_framework.permissions import (
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+from django.conf import settings
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from base.models import ShortLink
 from base.models import (
     Ingredient, Recipe, RecipeIngredient,
     Favorite, Subscription, ShoppingCart, Profile
@@ -20,6 +22,9 @@ from .serializers import (
     UserSerializer, PasswordChangeSerializer, AvatarSerializer
 )
 from django.contrib.auth import get_user_model, authenticate, logout
+
+from django.urls import reverse
+
 
 User = get_user_model()
 
@@ -191,6 +196,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
         return response
+
+    @action(
+        detail=True,
+        methods=['get'],
+        url_path='get-link'
+    )
+    def get_link(self, request, pk=None):
+        recipe = self.get_object()
+
+        frontend_url = settings.FRONTEND_URL + f'/recipes/{pk}'
+
+        short_link, created = ShortLink.objects.get_or_create(original_url=frontend_url)
+        short_url = request.build_absolute_uri(f'/{short_link.short_code}')
+        print({'short-link': short_url})
+        return Response({'short-link': short_url}, status=status.HTTP_200_OK)
 
 
 class UserViewSet(viewsets.ModelViewSet):

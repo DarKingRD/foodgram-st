@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.timezone import now
+from django.utils.crypto import get_random_string
+from django.urls import reverse
 
 # Получаем модель пользователя
 User = get_user_model()
@@ -49,6 +51,10 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ['-date_published']
+    
+    def get_absolute_url(self):
+        return reverse('recipe-detail', kwargs={'pk': self.pk})
+
 
     def __str__(self):
         return self.name
@@ -168,3 +174,17 @@ class Profile(models.Model):
 
     def __str__(self):
         return f'Профиль {self.user.username}'
+
+
+class ShortLink(models.Model):
+    original_url = models.URLField()
+    short_code = models.CharField(max_length=10, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.short_code:
+            self.short_code = get_random_string(length=6)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.short_code} -> {self.original_url}"
