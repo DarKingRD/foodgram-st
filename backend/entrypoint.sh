@@ -13,4 +13,4 @@ else
 fi
 
 # Start Gunicorn server
-exec gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 3
+exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
