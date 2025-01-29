@@ -1,6 +1,14 @@
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
+from .models import Recipe
+from django.http import HttpResponse
 
 
-def redirect_short_link(request, short_code):
-    short_link = get_object_or_404(ShortLink, short_code=short_code)
-    return redirect(short_link.original_url)
+def short_link(request, pk):
+    """Генерация короткой ссылки для рецепта и редирект на неё"""
+    try:
+        recipe = Recipe.objects.get(pk=pk)
+    except Recipe.DoesNotExist:
+        return HttpResponse({'error': 'Recipe not found'}, status=404)
+
+    short_url = f"http://localhost:3000/recipes/{recipe.pk}"
+    return redirect(short_url)

@@ -30,8 +30,11 @@ class UserAdmin(admin.ModelAdmin):
     @mark_safe
     def avatar_preview(self, obj):
         if obj.avatar:
-            return f'<img src="{obj.avatar.url}" width="50" height="50" style="border-radius:50%;">'
-        return "—"
+            return (
+                f'<img src="{obj.avatar.url}" width="50" height="50" '
+                'style="border-radius:50%;">'
+            )
+        return '—'
 
     @admin.display(description="Рецептов")
     def recipe_count(self, obj):
@@ -72,29 +75,42 @@ class RecipeIngredientInline(admin.TabularInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'cooking_time', 'author', 'favorites_count', 'ingredients_list', 'image_preview')
-    search_fields = ('name', 'author__username', 'author__email')  # Поиск по названию и автору
+    list_display = (
+        'id', 'name', 'cooking_time', 'author',
+        'favorites_count', 'ingredients_list', 'image_preview'
+    )
+    search_fields = ('name', 'author__username', 'author__email')
     list_filter = ('author', 'cooking_time', CookingTimeFilter)
     inlines = [RecipeIngredientInline]
 
-    @admin.display(description="В избранном")
+    @admin.display(description='В избранном')
     def favorites_count(self, obj):
         return Favorite.objects.filter(recipe=obj).count()
 
-    @admin.display(description="Ингредиенты")
+    @admin.display(description='Ингредиенты')
     @mark_safe
     def ingredients_list(self, obj):
         ingredients = obj.recipe_ingredients.all()
-        ingredient_names = [f"{ri.ingredient.name} — {ri.amount} {ri.ingredient.measurement_unit}" for ri in ingredients]
-        return "<br>".join(ingredient_names) if ingredients else "Нет ингредиентов"
-    
+        ingredient_names = [
+            f"{ri.ingredient.name} — {ri.amount} "
+            f"{ri.ingredient.measurement_unit}"
+            for ri in ingredients
+        ]
+
+        return (
+            "<br>".join(ingredient_names) if ingredients
+            else "Нет ингредиентов"
+        )
+
     @admin.display(description="Изображение", ordering='image')
     @mark_safe
     def image_preview(self, obj):
         if obj.image:
-            return format_html('<img src="{}" style="max-height: 100px; max-width: 100px; border-radius: 10px;" />', obj.image.url)
+            return format_html(
+                '<img src="{}" style="max-height: 100px; max-width: 100px; '
+                'border-radius: 10px;" />', obj.image.url
+            )
         return "Нет изображения"
-
 
 
 @admin.register(RecipeIngredient)

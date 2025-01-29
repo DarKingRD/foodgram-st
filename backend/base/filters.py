@@ -12,7 +12,7 @@ class CookingTimeFilter(admin.SimpleListFilter):
         if len(times) < 3:
             return []
 
-        Q1 = statistics.median_low(times[:len(times)//2])
+        Q1 = statistics.median_low(times[:len(times) // 2])
         median = statistics.median(times)
 
         return [
@@ -28,7 +28,8 @@ class CookingTimeFilter(admin.SimpleListFilter):
             if parts[0] == "fast":
                 return queryset.filter(cooking_time__lt=int(parts[1]))
             elif parts[0] == "medium":
-                return queryset.filter(cooking_time__range=(int(parts[1]), int(parts[2])))
+                return queryset.filter(cooking_time__range=(
+                    int(parts[1]), int(parts[2])))
             elif parts[0] == "long":
                 return queryset.filter(cooking_time__gt=int(parts[1]))
         return queryset

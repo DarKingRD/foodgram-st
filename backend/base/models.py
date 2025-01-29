@@ -5,12 +5,25 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.timezone import now
 
 
-# Получаем модель пользователя
+# Кастомная модель пользователя
 class CustomUser(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/',
                                blank=True,
                                null=True,
                                verbose_name='Аватарка')
+    email = models.EmailField(unique=True)
+    avatar = models.ImageField(upload_to='avatars/',
+                               blank=True,
+                               null=True,
+                               verbose_name='Аватарка')
+    username = models.CharField(max_length=150,
+                                unique=False, blank=True,
+                                null=True)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
         verbose_name = 'Пользователь'
