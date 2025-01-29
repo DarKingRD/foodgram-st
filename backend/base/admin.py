@@ -67,30 +67,32 @@ class IngredientAdmin(ImportExportModelAdmin):
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 1
-    autocomplete_fields = ('ingredient',)
+    autocomplete_fields = ['ingredient']
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'cooking_time', 'author', 'favorites_count', 'ingredients_list', 'image_preview')
     search_fields = ('name', 'author__username', 'author__email')  # Поиск по названию и автору
-    list_filter = ('author', CookingTimeFilter)
+    list_filter = ('author', 'cooking_time', CookingTimeFilter)
+    inlines = [RecipeIngredientInline]
 
     @admin.display(description="В избранном")
     def favorites_count(self, obj):
-        return obj.favorites.count()
+        return Favorite.objects.filter(recipe=obj).count()
 
     @admin.display(description="Ингредиенты")
     @mark_safe
     def ingredients_list(self, obj):
         ingredients = obj.recipe_ingredients.all()
-        return "<br>".join([f"{ri.ingredient.name} — {ri.amount} {ri.ingredient.measurement_unit}" for ri in ingredients])
-
+        ingredient_names = [f"{ri.ingredient.name} — {ri.amount} {ri.ingredient.measurement_unit}" for ri in ingredients]
+        return "<br>".join(ingredient_names) if ingredients else "Нет ингредиентов"
+    
     @admin.display(description="Изображение", ordering='image')
     @mark_safe
     def image_preview(self, obj):
         if obj.image:
-            return format_html('<img src="{obj.image.url}" style="max-height: 100px; max-width: 100px; border-radius: 10px;" />', obj.image.url)
+            return format_html('<img src="{}" style="max-height: 100px; max-width: 100px; border-radius: 10px;" />', obj.image.url)
         return "Нет изображения"
 
 

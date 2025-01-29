@@ -47,8 +47,8 @@ INSTALLED_APPS = [
     'djoser',
     'corsheaders',
     'import_export',
-    'base',
     'api',
+    'base',
 ]
 
 
@@ -85,7 +85,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
+"""
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -96,6 +96,16 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
+"""
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
 if 'test' in sys.argv and DEBUG:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -122,6 +132,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'base.CustomUser'
 
 LANGUAGE_CODE = 'ru'
 

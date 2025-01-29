@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 import base64
 from base.models import (
     Ingredient, Recipe, RecipeIngredient,
-    Favorite, Subscription, ShoppingCart, Profile
+    Favorite, Subscription, ShoppingCart
 )
 
 User = get_user_model()
@@ -35,11 +35,11 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    """Сериализатор для профиля пользователя."""
-    class Meta:
-        model = Profile
-        fields = ('avatar',)
+#class ProfileSerializer(serializers.ModelSerializer):
+#    """Сериализатор для профиля пользователя."""
+#    class Meta:
+#        model = Profile
+#        fields = ('avatar',)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -63,12 +63,12 @@ class UserSerializer(serializers.ModelSerializer):
             ).exists()
         return False
 
-    def get_avatar(self, obj):
-        """Возвращает URL аватарки пользователя."""
-        profile = Profile.objects.filter(user=obj).first()
-        if profile and profile.avatar:
-            return profile.avatar.url
-        return None
+#    def get_avatar(self, obj):
+#        """Возвращает URL аватарки пользователя."""
+#        profile = Profile.objects.filter(user=obj).first()
+#        if profile and profile.avatar:
+#            return profile.avatar.url
+#        return None
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -92,11 +92,11 @@ class UserCreateSerializer(serializers.ModelSerializer):
         validate_password(value)
         return value
 
-    def create(self, validated_data):
-        """Создаёт пользователя и профиль."""
-        user = User.objects.create_user(**validated_data)
-        Profile.objects.create(user=user)
-        return user
+#    def create(self, validated_data):
+#        """Создаёт пользователя и профиль."""
+#        user = User.objects.create_user(**validated_data)
+#        Profile.objects.create(user=user)
+#        return user
 
 
 class PasswordChangeSerializer(serializers.Serializer):
@@ -110,13 +110,13 @@ class PasswordChangeSerializer(serializers.Serializer):
         return value
 
 
-class AvatarSerializer(serializers.ModelSerializer):
-    """Сериализатор для аватарки пользователя."""
-    avatar = Base64ImageField()
-
-    class Meta:
-        model = Profile
-        fields = ('avatar',)
+#class AvatarSerializer(serializers.ModelSerializer):
+#    """Сериализатор для аватарки пользователя."""
+#    avatar = Base64ImageField()
+#
+#    class Meta:
+#        model = Profile
+#        fields = ('avatar',)
 
 
 class SubscriptionSerializer(UserSerializer):

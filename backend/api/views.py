@@ -5,22 +5,20 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly, AllowAny, IsAuthenticated
 )
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
 from django.conf import settings
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model, authenticate, logout
+from django.contrib.auth import get_user_model
 
 from base.models import (
     Ingredient, Recipe, RecipeIngredient, Favorite, 
-    Subscription, ShoppingCart, Profile, ShortLink
+    Subscription, ShoppingCart
 )
 from .serializers import (
     IngredientSerializer, RecipeSerializer, UserCreateSerializer,
     FavoriteSerializer, SubscriptionSerializer, ShoppingCartSerializer,
-    UserSerializer, PasswordChangeSerializer, AvatarSerializer
+    UserSerializer, PasswordChangeSerializer
 )
 
 User = get_user_model()
@@ -211,15 +209,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
-        """Генерация короткой ссылки на рецепт."""
-        recipe = self.get_object()
-
-        frontend_url = settings.FRONTEND_URL + f'/recipes/{pk}'
-
-        short_link, created = ShortLink.objects.get_or_create(
-            original_url=frontend_url)
-        short_url = request.build_absolute_uri(f'/s/{short_link.short_code}')
-        return Response({'short-link': short_url}, status=status.HTTP_200_OK)
+        ...
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -266,30 +256,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['put', 'delete'], permission_classes=[
         permissions.IsAuthenticated], url_path='me/avatar')
     def avatar(self, request):
-        """Управление аватаром пользователя."""
-        user = request.user
-        profile, created = Profile.objects.get_or_create(user=user)
-
-        if request.method == 'DELETE':
-            if profile.avatar:
-                profile.avatar.delete()
-                profile.avatar = None
-                profile.save()
-                return Response(
-                    {'avatar': None},
-                    status=status.HTTP_204_NO_CONTENT
-                )
-            return Response(
-                {'error': 'Аватар отсутствует'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = AvatarSerializer(profile, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        ...
 
     @action(detail=False, methods=['get'], permission_classes=[
         permissions.IsAuthenticated])
@@ -390,52 +357,3 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 author=author
             ).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class CustomAuthToken(ObtainAuthToken):
-    """Кастомный View для получения и удаления токена."""
-    def post(self, request, *args, **kwargs):
-        if 'logout' in request.path:
-            if request.user.is_authenticated:
-                request.user.auth_token.delete()
-                logout(request)
-                return Response(
-                    {'status': 'Выход выполнен успешно'},
-                    status=status.HTTP_204_NO_CONTENT
-                )
-            return Response(
-                {'error': 'Пользователь не аутентифицирован'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        email = request.data.get('email')
-        password = request.data.get('password')
-
-        if not email or not password:
-            return Response(
-                {'error': 'Требуется email и пароль.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response(
-                {'error': 'Пользователь с таким email не найден'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = authenticate(request, username=user.username, password=password)
-
-        if user is None:
-            return Response(
-                {'error': 'Неверные учетные данные'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'auth_token': token.key,
-            'user_id': user.id,
-            'email': user.email,
-        })

@@ -1,10 +1,28 @@
 from django.db import models
+from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.utils.timezone import now
-from django.utils.crypto import get_random_string
-from django.urls import reverse
+
 
 # Получаем модель пользователя
+class CustomUser(AbstractUser):
+    avatar = models.ImageField(upload_to='avatars/',
+                               blank=True,
+                               null=True,
+                               verbose_name='Аватарка')
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'.strip()
+
+    def __str__(self):
+        return self.username
+
+
 User = get_user_model()
 
 
@@ -41,6 +59,7 @@ class Recipe(models.Model):
         verbose_name='Изображение')
     text = models.TextField(verbose_name='Описание')
     cooking_time = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
         verbose_name='Время приготовления (мин)')
     date_published = models.DateTimeField(
         default=now,
@@ -53,32 +72,48 @@ class Recipe(models.Model):
         ordering = ['-date_published']
 
     def get_absolute_url(self):
-        return reverse('recipe-detail', kwargs={'pk': self.pk})
+        return f'recipes/{self.pk}'
 
     def __str__(self):
         return self.name
 
 
-# Модель избранное
-class Favorite(models.Model):
+# Базовая модель для избранного и корзины
+class BaseUserRecipeRelation(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='favorites',
-        verbose_name='Пользователь')
+        verbose_name='Пользователь'
+    )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorites',
-        verbose_name='Рецепт')
+        verbose_name='Рецепт'
+    )
 
     class Meta:
-        unique_together = ('user', 'recipe')
+        abstract = True
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'recipe'],
+                                    name='unique_user_recipe')
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} -> {self.recipe.name}'
+
+
+# Модель избранного
+class Favorite(BaseUserRecipeRelation):
+    class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
-    def __str__(self):
-        return f'{self.user.username} добавил в избранное {self.recipe.name}'
+
+# Модель корзины
+class ShoppingCart(BaseUserRecipeRelation):
+    class Meta:
+        verbose_name = 'Корзина покупок'
+        verbose_name_plural = 'Корзины покупок'
 
 
 # Модель подписки
@@ -93,42 +128,17 @@ class Subscription(models.Model):
         on_delete=models.CASCADE,
         related_name='subscribers',
         verbose_name='Автор')
-    recipes_count = models.IntegerField(
-        default=0,
-        verbose_name='Кол-во рецептов'
-    )
 
     class Meta:
-        unique_together = ['user', 'author']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'author'],
+                                    name='unique_user_author')]
         ordering = ['id']
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
         return f'{self.user.username} подписан на {self.author.username}'
-
-
-# Модель корзины
-class ShoppingCart(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='shopping_carts',
-        verbose_name='Пользователь'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='shopping_carts',
-        verbose_name='Рецепт')
-
-    class Meta:
-        unique_together = ('user', 'recipe')
-        verbose_name = 'Корзина покупок'
-        verbose_name_plural = 'Корзины покупок'
-
-    def __str__(self):
-        return f'У {self.user.username} есть {self.recipe.name} в корзине'
 
 
 # Модель для связи рецепта и ингредиента
@@ -143,48 +153,15 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         related_name='recipe_ingredients',
         verbose_name='Ингредиент')
-    amount = models.IntegerField(verbose_name='Количество')
+    amount = models.IntegerField(verbose_name='Количество',
+                                 validators=[MinValueValidator(1)])
 
     class Meta:
-        unique_together = ('recipe', 'ingredient')
+        constraints = [
+            models.UniqueConstraint(fields=['recipe', 'ingredient'],
+                                    name='unique_recipe_ingredient')]
         verbose_name = 'Ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецептов'
 
     def __str__(self):
         return f'{self.amount} {self.ingredient} в {self.recipe.name}'
-
-
-# Модель профиля
-class Profile(models.Model):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name='profiles',
-        verbose_name='Пользователь')
-    avatar = models.ImageField(
-        upload_to='avatars/',
-        blank=True,
-        null=True,
-        verbose_name='Аватарка')
-
-    class Meta:
-        verbose_name = 'Профиль'
-        verbose_name_plural = 'Профили'
-
-    def __str__(self):
-        return f'Профиль {self.user.username}'
-
-
-# Модель короткой ссылки
-class ShortLink(models.Model):
-    original_url = models.URLField()
-    short_code = models.CharField(max_length=10, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        if not self.short_code:
-            self.short_code = get_random_string(length=6)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.short_code} -> {self.original_url}"
