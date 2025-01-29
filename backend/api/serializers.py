@@ -2,17 +2,18 @@ from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.password_validation import validate_password
-from django.core.files.base import ContentFile
 from base.models import (
     Ingredient, Recipe, RecipeIngredient, Subscription,
+    Favorite, ShoppingCart
 )
 
 
 User = get_user_model()
 
 
-class Avatar(serializers.ModelSerializer):
+class AvatarSerializer(serializers.ModelSerializer):
     """Сериализатор для аватара пользователя."""
     avatar = Base64ImageField()
 
@@ -36,16 +37,20 @@ class UserSerializer(DjoserUserSerializer):
     def get_is_subscribed(self, author):
         """Проверяет, подписан ли текущий пользователь на автора."""
         request = self.context.get('request')
-        return request and request.user.is_authenticated and Subscription.objects.filter(
-            user=request.user, author=author).exists()
 
+        # Проверяем, аутентифицирован ли пользователь
+        if request and request.user.is_authenticated:
+            return Subscription.objects.filter(user=request.user,
+                                               author=author).exists()
 
-#    def get_avatar(self, obj):
-#        """Возвращает URL аватарки пользователя."""
-#        User = Us.objects.filter(user=obj).first()
-#        if profile and profile.avatar:
-#            return profile.avatar.url
-#        return None
+        # Если пользователь не аутентифицирован, возвращаем False
+        return False
+
+    def get_avatar(self, user):
+        """Возвращает URL аватара пользователя, если он есть."""
+        if user.avatar and hasattr(user.avatar, 'url'):
+            return user.avatar.url
+        return None
 
 
 class UserSubscriptionSerializer(UserSerializer):
@@ -62,12 +67,12 @@ class UserSubscriptionSerializer(UserSerializer):
             'is_subscribed', 'recipes', 'recipes_count', 'avatar'
         )
 
-    def get_recipes(self, obj):
+    def get_recipes(self, author):
         request = self.context.get('request')
         recipes_limit = int(request.GET.get('recipes_limit', 10**10))
 
         return RecipeSerializer(
-            author.recipes.all()['recipes_limit'], many=True,
+            author.recipes.all()[:recipes_limit], many=True,
             context=self.context).data
 
 
@@ -110,6 +115,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(
         source='recipe_ingredients', many=True
     )
+    cooking_time = serializers.IntegerField(min_value=1, required=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
@@ -130,7 +136,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                 "Должен быть хотя бы один ингредиент."
             )
 
-        ingredient_ids = [ingredient['ingredient']['id'] for ingredient in ingredients]
+        ingredient_ids = [ingredient['id'] for ingredient in ingredients]
 
         if len(set(ingredient_ids)) != len(ingredient_ids):
             raise serializers.ValidationError(
@@ -138,22 +144,30 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
 
         return data
-    
-    def validate_cooking_time(self, value):
-        if value <= 0:
-            raise serializers.ValidationError(
-                "Время приготовления должно быть больше нуля."
-            )
 
     def get_is_favorited(self, obj):
         """Проверяет, добавлен ли рецепт в избранное."""
         request = self.context.get('request')
-        return request and request.user.is_authenticated and obj.favorites.filter(user=request.user).exists()
+
+        # Проверяем, аутентифицирован ли пользователь
+        if not request or not request.user.is_authenticated:
+            return False
+
+        # Если пользователь аутент., проверяем, есть ли рецепт в избранном
+        favorite = Favorite.objects.filter(
+            user=request.user, recipe=obj).exists()
+        return favorite
 
     def get_is_in_shopping_cart(self, obj):
         """Проверяет, добавлен ли рецепт в корзину покупок."""
         request = self.context.get('request')
-        return request and request.user.is_authenticated and obj.shopping_carts.filter(user=request.user).exists()
+
+        if not request or not request.user.is_authenticated:
+            return False
+
+        shoppingcart = ShoppingCart.objects.filter(
+            user=request.user, recipe=obj).exists()
+        return shoppingcart
 
     def create(self, validated_data):
         """Создаёт рецепт и связанные ингредиенты."""
@@ -174,7 +188,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
                 recipe=recipe,
-                ingredient_id=ingredient['ingredient']['id'],
+                ingredient_id=ingredient['id'],
                 amount=ingredient['amount']
             )
             for ingredient in ingredients_data
