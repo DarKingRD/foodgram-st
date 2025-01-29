@@ -1,93 +1,124 @@
 [
     {
-        "model": "base.ingredient",
-        "pk": 1,
-        "fields": {
-            "name": "абрикосовое варенье",
-            "measurement_unit": "г"
-        }
+      "model": "base.ingredient",
+      "pk": 1,
+      "fields": {
+        "name": "Паста",
+        "measurement_unit": "г"
+      }
     },
     {
-        "model": "base.ingredient",
-        "pk": 2,
-        "fields": {
-            "name": "абрикосовое пюре",
-            "measurement_unit": "г"
-        }
+      "model": "base.ingredient",
+      "pk": 2,
+      "fields": {
+        "name": "Сметана",
+        "measurement_unit": "мл"
+      }
     },
     {
-        "model": "base.ingredient",
-        "pk": 3,
-        "fields": {
-            "name": "абрикосовый джем",
-            "measurement_unit": "г"
-        }
+      "model": "base.ingredient",
+      "pk": 3,
+      "fields": {
+        "name": "Сыр",
+        "measurement_unit": "г"
+      }
     },
     {
-        "model": "base.ingredient",
-        "pk": 4,
-        "fields": {
-            "name": "абрикосовый сок",
-            "measurement_unit": "мл"
-        }
+      "model": "base.customuser",
+      "pk": 1,
+      "fields": {
+        "username": "user1",
+        "email": "user1@example.com",
+        "first_name": "Иван",
+        "last_name": "Иванов",
+        "password": "password123"
+      }
     },
     {
-        "model": "base.ingredient",
-        "pk": 5,
-        "fields": {
-            "name": "абрикосы",
-            "measurement_unit": "г"
-        }
+      "model": "base.customuser",
+      "pk": 2,
+      "fields": {
+        "username": "user2",
+        "email": "user2@example.com",
+        "first_name": "Петр",
+        "last_name": "Петров",
+        "password": "password123"
+      }
     },
     {
-        "model": "auth.user",
-        "pk": 1,
-        "fields": {
-            "username": "User",
-            "first_name": "denis",
-            "last_name": "baranov",
-            "email": "testuser@example.com",
-            "password": "pbkdf2_sha256$870000$KjDhONeGQKYl5fgFb42GOb$LKCHlOVdRH5cSd7fvQHLgG2sa8f/rBGHKrYR9Ai+f78=",
-            "is_staff": false,
-            "is_superuser": false
-        }
+      "model": "base.recipe",
+      "pk": 1,
+      "fields": {
+        "author": 1,
+        "name": "Паста Карбонара",
+        "image": "recipes/images/pasta_carbonara.jpg",
+        "text": "Классический итальянский рецепт пасты с сыром, яйцами и беконом.",
+        "cooking_time": 30,
+        "date_published": "2025-01-01T00:00:00Z"
+      }
     },
     {
-        "model": "base.recipe",
-        "pk": 1,
-        "fields": {
-            "author": 1,
-            "name": "First Test Recipe",
-            "text": "This is a first test recipe.",
-            "cooking_time": 30
-        }
+      "model": "base.recipe",
+      "pk": 2,
+      "fields": {
+        "author": 2,
+        "name": "Куриный суп",
+        "image": "recipes/images/chicken_soup.jpg",
+        "text": "Питательный суп с курицей и овощами.",
+        "cooking_time": 45,
+        "date_published": "2025-01-01T01:00:00Z"
+      }
     },
     {
-        "model": "base.recipeingredient",
-        "pk": 1,
-        "fields": {
-            "recipe": 1,
-            "ingredient": 1,
-            "amount": 200
-        }
+      "model": "base.recipeingredient",
+      "pk": 1,
+      "fields": {
+        "recipe": 1,
+        "ingredient": 1,
+        "amount": 200
+      }
     },
     {
-        "model": "base.recipeingredient",
-        "pk": 2,
-        "fields": {
-            "recipe": 1,
-            "ingredient": 2,
-            "amount": 150
-        }
+      "model": "base.recipeingredient",
+      "pk": 2,
+      "fields": {
+        "recipe": 1,
+        "ingredient": 2,
+        "amount": 100
+      }
     },
     {
-        "model": "base.recipeingredient",
-        "pk": 3,
-        "fields": {
-            "recipe": 1,
-            "ingredient": 3,
-            "amount": 50
-        }
+      "model": "base.recipeingredient",
+      "pk": 3,
+      "fields": {
+        "recipe": 1,
+        "ingredient": 3,
+        "amount": 50
+      }
+    },
+    {
+      "model": "base.favorite",
+      "pk": 1,
+      "fields": {
+        "user": 1,
+        "recipe": 1
+      }
+    },
+    {
+      "model": "base.shoppingcart",
+      "pk": 1,
+      "fields": {
+        "user": 2,
+        "recipe": 2
+      }
+    },
+    {
+      "model": "base.subscription",
+      "pk": 1,
+      "fields": {
+        "user": 1,
+        "author": 2
+      }
     }
-]
-    
+  ]
+  
