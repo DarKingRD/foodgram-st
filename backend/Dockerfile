@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 7000
+EXPOSE 8000
 
 COPY ./test_data.json /test_data.json
 COPY ./entrypoint.sh /entrypoint.sh
