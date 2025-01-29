@@ -1,23 +1,49 @@
 from django.contrib import admin
+from django.utils.html import format_html, mark_safe
 from import_export.admin import ImportExportModelAdmin
 from import_export.resources import ModelResource
 from .models import (
     Ingredient, Recipe, RecipeIngredient,
-    Favorite, ShoppingCart, Subscription, Profile,
-    ShortLink
+    Favorite, ShoppingCart, Subscription
 )
+from .filters import CookingTimeFilter
 from django.contrib.auth import get_user_model
 
-User = get_user_model()
 
-admin.site.unregister(User)
+User = get_user_model()
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+    list_display = (
+        'id', 'username', 'full_name', 'email', 'avatar_preview',
+        'recipe_count', 'subscription_count', 'subscriber_count'
+    )
     search_fields = ('username', 'email')
     list_filter = ('is_staff', 'is_active')
+
+    @admin.display(description="ФИО")
+    def full_name(self, obj):
+        return obj.full_name()
+
+    @admin.display(description="Аватар", ordering="avatar")
+    @mark_safe
+    def avatar_preview(self, obj):
+        if obj.avatar:
+            return f'<img src="{obj.avatar.url}" width="50" height="50" style="border-radius:50%;">'
+        return "—"
+
+    @admin.display(description="Рецептов")
+    def recipe_count(self, obj):
+        return obj.recipes.count()
+
+    @admin.display(description="Подписок")
+    def subscription_count(self, obj):
+        return obj.subscriptions.count()
+
+    @admin.display(description="Подписчиков")
+    def subscriber_count(self, obj):
+        return obj.subscribers.count()
 
 
 class IngredientResource(ModelResource):
@@ -34,7 +60,8 @@ class IngredientResource(ModelResource):
 class IngredientAdmin(ImportExportModelAdmin):
     resource_class = IngredientResource
     list_display = ('name', 'measurement_unit')
-    search_fields = ('name',)
+    search_fields = ('name', 'measurement_unit')
+    list_filter = ('measurement_unit',)
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -45,14 +72,27 @@ class RecipeIngredientInline(admin.TabularInline):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author', 'cooking_time', 'favorites_count')
-    list_filter = ('author', 'cooking_time')
-    search_fields = ('name', 'author__username')
-    inlines = [RecipeIngredientInline]
+    list_display = ('id', 'name', 'cooking_time', 'author', 'favorites_count', 'ingredients_list', 'image_preview')
+    search_fields = ('name', 'author__username', 'author__email')  # Поиск по названию и автору
+    list_filter = ('author', CookingTimeFilter)
 
+    @admin.display(description="В избранном")
     def favorites_count(self, obj):
         return obj.favorites.count()
-    favorites_count.short_description = 'Added to favorites'
+
+    @admin.display(description="Ингредиенты")
+    @mark_safe
+    def ingredients_list(self, obj):
+        ingredients = obj.recipe_ingredients.all()
+        return "<br>".join([f"{ri.ingredient.name} — {ri.amount} {ri.ingredient.measurement_unit}" for ri in ingredients])
+
+    @admin.display(description="Изображение", ordering='image')
+    @mark_safe
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{obj.image.url}" style="max-height: 100px; max-width: 100px; border-radius: 10px;" />', obj.image.url)
+        return "Нет изображения"
+
 
 
 @admin.register(RecipeIngredient)
@@ -62,15 +102,8 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     search_fields = ('recipe__name', 'ingredient__name')
 
 
-@admin.register(Favorite)
-class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ('user', 'recipe')
-    list_filter = ('user', 'recipe')
-    search_fields = ('user__username', 'recipe__name')
-
-
-@admin.register(ShoppingCart)
-class ShoppingCartAdmin(admin.ModelAdmin):
+@admin.register(Favorite, ShoppingCart)
+class UserRecipeRelationAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     list_filter = ('user', 'recipe')
     search_fields = ('user__username', 'recipe__name')
@@ -81,13 +114,3 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('user', 'author')
     list_filter = ('user', 'author')
     search_fields = ('user__username', 'author__username')
-
-
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'avatar')
-
-
-@admin.register(ShortLink)
-class ShortLinkAdmin(admin.ModelAdmin):
-    list_display = ('original_url', 'short_code')
