@@ -25,7 +25,7 @@
     },
     {
       "model": "base.customuser",
-      "pk": 1,
+      "pk": 2,
       "fields": {
         "username": "user1",
         "email": "user1@example.com",
@@ -36,7 +36,7 @@
     },
     {
       "model": "base.customuser",
-      "pk": 2,
+      "pk": 3,
       "fields": {
         "username": "user2",
         "email": "user2@example.com",
