@@ -2,16 +2,12 @@ FROM python:3.12.7-slim
 
 WORKDIR /backend
 
+RUN pip install gunicorn==20.1.0
+
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
-
-COPY ./test_data.json /test_data.json
-COPY ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-CMD ["/entrypoint.sh"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "foodgram_backend.wsgi"]
