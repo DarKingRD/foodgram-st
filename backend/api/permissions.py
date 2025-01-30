@@ -1,12 +1,7 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
 class IsAuthorOrReadOnly(BasePermission):
     """Проверяет, является ли пользователь автором рецепта."""
     def has_object_permission(self, request, view, obj):
-        # Разрешаем только чтение для всех
-        if request.method in ['GET', 'HEAD', 'OPTIONS']:
-            return True
-
-        # Разрешаем изменение или удаление только автору рецепта
-        return obj.author == request.user
+        return request.method in SAFE_METHODS or obj.author == request.user

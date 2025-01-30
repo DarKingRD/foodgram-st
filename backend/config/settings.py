@@ -96,6 +96,7 @@ DATABASES = {
     }
 }
 
+
 if 'test' in sys.argv and DEBUG:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -122,7 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = 'base.CustomUser'
+AUTH_USER_MODEL = 'base.SiteUser'
 
 LANGUAGE_CODE = 'ru'
 

@@ -24,7 +24,7 @@
       }
     },
     {
-      "model": "base.customuser",
+      "model": "base.siteuser",
       "pk": 2,
       "fields": {
         "username": "user1",
@@ -35,7 +35,7 @@
       }
     },
     {
-      "model": "base.customuser",
+      "model": "base.siteuser",
       "pk": 3,
       "fields": {
         "username": "user2",

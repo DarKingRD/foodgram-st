@@ -1,15 +1,16 @@
-from io import BytesIO
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.db.models import Sum
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from djoser.views import UserViewSet as DjoserUserViewSet
 from base.models import (
-    Ingredient, Recipe, Favorite, Subscription, ShoppingCart
+    Ingredient, Recipe, Favorite, Subscription, ShoppingCart,
+    RecipeIngredient
 )
 from .serializers import (
     IngredientSerializer, RecipeSerializer,
@@ -42,13 +43,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
-
-    def get_serializer_context(self):
-        """Добавление ингредиентов в контекст сериализатора."""
-        context = super().get_serializer_context()
-        if self.request.method in ['POST', 'PATCH']:
-            context['ingredients'] = self.request.data.get('ingredients', [])
-        return context
 
     def get_queryset(self):
         """Фильтрация рецептов по автору, корзине и избранному."""
@@ -103,7 +97,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response({'status': 'Рецепт уже в списке'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        model.objects.filter(user=user, recipe=recipe).delete()
+        get_object_or_404(model, user=user, recipe=recipe).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post', 'delete'])
@@ -119,13 +113,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def download_shopping_cart(self, request):
         """Скачивание списка покупок."""
-        shopping_cart_text = render_shopping_cart(request.user)
-        shopping_cart_file = BytesIO()
-        shopping_cart_file.write(shopping_cart_text.encode('utf-8'))
-        shopping_cart_file.seek(0)
+        # Получаем ингредиенты и их количество
+        user = request.user
+
+        ingredients = (
+            RecipeIngredient.objects
+            .filter(recipe__shoppingcart__user=user)
+            .values('ingredient__name',
+                    'ingredient__measurement_unit')
+            .annotate(total_amount=Sum('amount'))
+            .order_by('ingredient__name')
+        )
+
+        # Получаем перечень рецептов
+        recipes = Recipe.objects.filter(
+            shoppingcart__user=user).values('name', 'author__username')
+
+        shopping_cart_text = render_shopping_cart(user, ingredients, recipes)
 
         return FileResponse(
-            shopping_cart_file,
+            shopping_cart_text,
             as_attachment=True,
             filename='shopping_cart.txt',
             content_type='text/plain'
@@ -136,7 +143,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Генерация короткой ссылки на рецепт."""
         recipe = self.get_object()
         short_url = request.build_absolute_uri(
-            reverse('short_link', kwargs={'pk': recipe.pk})
+            reverse('short_link', args=[recipe.pk])
         )
         return Response({'short-link': short_url}, status=status.HTTP_200_OK)
 
@@ -148,13 +155,18 @@ class UserViewSet(DjoserUserViewSet):
     permission_classes = [permissions.AllowAny]
     lookup_field = "id"  # Используем ID для поиска пользователей
 
+    def get_object(self):
+        """Возвращает текущего пользователя при вызове me."""
+        if self.action == "me":
+            return self.request.user
+        return super().get_object()
+
     @action(detail=False,
             methods=['get'],
             permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         """Получение данных текущего пользователя."""
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return self.retrieve(request)
 
     @action(detail=False, methods=['put', 'delete'], permission_classes=[
         permissions.IsAuthenticated], url_path='me/avatar')
@@ -184,9 +196,8 @@ class UserViewSet(DjoserUserViewSet):
         permissions.IsAuthenticated])
     def subscriptions(self, request):
         """Получение списка подписок пользователя."""
-        subscriptions = Subscription.objects.filter(
-            user=request.user).select_related(
-                'author').prefetch_related('author__recipes')
+        subscriptions = request.user.subscribers.select_related(
+            'author').prefetch_related('author__recipes')
 
         authors = [subscription.author for subscription in subscriptions]
         page = self.paginate_queryset(authors)
@@ -202,8 +213,7 @@ class UserViewSet(DjoserUserViewSet):
         author = get_object_or_404(User, id=id)
 
         if user == author:
-            raise ValidationError(
-                {'errors': 'Нельзя подписаться на самого себя'})
+            raise ValidationError({'errors': 'Действие невозможно для самого себя'})
 
         if request.method == 'POST':
             subscription, created = Subscription.objects.get_or_create(
@@ -216,6 +226,6 @@ class UserViewSet(DjoserUserViewSet):
             return Response({'status': 'Подписка успешно добавлена'},
                             status=status.HTTP_201_CREATED)
 
-        Subscription.objects.filter(user=user, author=author).delete()
+        get_object_or_404(Subscription, user=user, author=author).delete()
         return Response({'status': 'Вы успешно отписались'},
                         status=status.HTTP_204_NO_CONTENT)

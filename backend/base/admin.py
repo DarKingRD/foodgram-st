@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.utils.html import format_html, mark_safe
+from django.utils.html import mark_safe
 from import_export.admin import ImportExportModelAdmin
 from import_export.resources import ModelResource
 from .models import (
@@ -29,12 +29,11 @@ class UserAdmin(admin.ModelAdmin):
     @admin.display(description="Аватар", ordering="avatar")
     @mark_safe
     def avatar_preview(self, obj):
-        if obj.avatar:
+        if obj.avatar:  # без этого выдаёт ошибку!
             return (
                 f'<img src="{obj.avatar.url}" width="50" height="50" '
                 'style="border-radius:50%;">'
             )
-        return '—'
 
     @admin.display(description="Рецептов")
     def recipe_count(self, obj):
@@ -42,11 +41,11 @@ class UserAdmin(admin.ModelAdmin):
 
     @admin.display(description="Подписок")
     def subscription_count(self, obj):
-        return obj.subscriptions.count()
+        return obj.subscribers.count()
 
     @admin.display(description="Подписчиков")
     def subscriber_count(self, obj):
-        return obj.subscribers.count()
+        return obj.author.count()
 
 
 class IngredientResource(ModelResource):
@@ -55,7 +54,7 @@ class IngredientResource(ModelResource):
         exclude = ('id',)
         skip_first_row = True
         encoding = 'utf-8-sig'
-        import_mode = 1  # Create new entries only
+        import_mode = 1
         import_id_fields = []
 
 
@@ -80,7 +79,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'favorites_count', 'ingredients_list', 'image_preview'
     )
     search_fields = ('name', 'author__username', 'author__email')
-    list_filter = ('author', 'cooking_time', CookingTimeFilter)
+    list_filter = ('author', CookingTimeFilter)
     inlines = [RecipeIngredientInline]
 
     @admin.display(description='В избранном')
@@ -90,27 +89,19 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description='Ингредиенты')
     @mark_safe
     def ingredients_list(self, obj):
-        ingredients = obj.recipe_ingredients.all()
-        ingredient_names = [
-            f"{ri.ingredient.name} — {ri.amount} "
-            f"{ri.ingredient.measurement_unit}"
-            for ri in ingredients
-        ]
-
-        return (
-            "<br>".join(ingredient_names) if ingredients
-            else "Нет ингредиентов"
-        )
+        return "<br>".join((
+            f'{ri.ingredient.name} — {ri.amount} '
+            f'{ri.ingredient.measurement_unit}')
+            for ri in obj.recipe_ingredients.all())
 
     @admin.display(description="Изображение", ordering='image')
     @mark_safe
     def image_preview(self, obj):
-        if obj.image:
-            return format_html(
-                '<img src="{}" style="max-height: 100px; max-width: 100px; '
-                'border-radius: 10px;" />', obj.image.url
-            )
-        return "Нет изображения"
+        return (
+            f'<img src="{obj.image.url}" '
+            'style="max-height: 100px;'
+            'max-width: 100px; border-radius: 10px;" />'
+        )
 
 
 @admin.register(RecipeIngredient)

@@ -6,21 +6,22 @@ from django.utils.timezone import now
 
 
 # Кастомная модель пользователя
-class CustomUser(AbstractUser):
+class SiteUser(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/',
                                blank=True,
                                null=True,
                                verbose_name='Аватарка')
-    email = models.EmailField(unique=True)
-    avatar = models.ImageField(upload_to='avatars/',
-                               blank=True,
-                               null=True,
-                               verbose_name='Аватарка')
+    email = models.EmailField(max_length=254,
+                              unique=True,
+                              verbose_name='Электронная почта')
     username = models.CharField(max_length=150,
-                                unique=False, blank=True,
-                                null=True)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
+                                blank=True,
+                                null=True,
+                                verbose_name='Никнейм')
+    first_name = models.CharField(max_length=150,
+                                  verbose_name='Имя')
+    last_name = models.CharField(max_length=150,
+                                 verbose_name='Фамилия')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
@@ -28,6 +29,7 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+        ordering = ['first_name', 'last_name']
 
     def full_name(self):
         return f'{self.first_name} {self.last_name}'.strip()
@@ -85,8 +87,8 @@ class Recipe(models.Model):
         ordering = ['-date_published']
 
     def get_absolute_url(self):
-        return f'recipes/{self.pk}'
-
+        return f'http://localhost:3000/recipes/{self.pk}'
+    
     def __str__(self):
         return self.name
 
@@ -106,10 +108,6 @@ class BaseUserRecipeRelation(models.Model):
 
     class Meta:
         abstract = True
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'recipe'],
-                                    name='unique_user_recipe')
-        ]
 
     def __str__(self):
         return f'{self.user.username} -> {self.recipe.name}'
@@ -118,6 +116,10 @@ class BaseUserRecipeRelation(models.Model):
 # Модель избранного
 class Favorite(BaseUserRecipeRelation):
     class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'recipe'],
+                                    name='unique__favorite_user_recipe')
+        ]
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
@@ -125,6 +127,10 @@ class Favorite(BaseUserRecipeRelation):
 # Модель корзины
 class ShoppingCart(BaseUserRecipeRelation):
     class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'recipe'],
+                                    name='unique_cart_user_recipe')
+        ]
         verbose_name = 'Корзина покупок'
         verbose_name_plural = 'Корзины покупок'
 
@@ -134,12 +140,12 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscriptions',
+        related_name='subscribers',
         verbose_name='Пользователь')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscribers',
+        related_name='author',
         verbose_name='Автор')
 
     class Meta:

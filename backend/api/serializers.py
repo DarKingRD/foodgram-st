@@ -25,7 +25,7 @@ class AvatarSerializer(serializers.ModelSerializer):
 class UserSerializer(DjoserUserSerializer):
     """Сериализатор для пользователя."""
     is_subscribed = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    avatar = Base64ImageField()
 
     class Meta:
         model = User
@@ -37,20 +37,12 @@ class UserSerializer(DjoserUserSerializer):
     def get_is_subscribed(self, author):
         """Проверяет, подписан ли текущий пользователь на автора."""
         request = self.context.get('request')
-
-        # Проверяем, аутентифицирован ли пользователь
-        if request and request.user.is_authenticated:
-            return Subscription.objects.filter(user=request.user,
-                                               author=author).exists()
-
-        # Если пользователь не аутентифицирован, возвращаем False
-        return False
-
-    def get_avatar(self, user):
-        """Возвращает URL аватара пользователя, если он есть."""
-        if user.avatar and hasattr(user.avatar, 'url'):
-            return user.avatar.url
-        return None
+        return bool(
+            request and
+            request.user.is_authenticated and
+            Subscription.objects.filter(
+                user=request.user, author=author).exists()
+        )
 
 
 class UserSubscriptionSerializer(UserSerializer):
@@ -68,12 +60,11 @@ class UserSubscriptionSerializer(UserSerializer):
         )
 
     def get_recipes(self, author):
-        request = self.context.get('request')
-        recipes_limit = int(request.GET.get('recipes_limit', 10**10))
-
         return RecipeSerializer(
-            author.recipes.all()[:recipes_limit], many=True,
-            context=self.context).data
+            author.recipes.all()[:int(self.context.get('request').GET.get(
+                'recipes_limit', 10**10))], 
+            many=True, context=self.context
+        ).data
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -97,16 +88,6 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
-
-    def to_internal_value(self, data):
-        """Обрабатывает входные данные для ингредиентов."""
-        if isinstance(data, dict) and 'ingredient' in data:
-            ingredient_id = data['ingredient'].get('id')
-            return {
-                'ingredient': {'id': ingredient_id},
-                'amount': data['amount']
-            }
-        return data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -148,15 +129,12 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         """Проверяет, добавлен ли рецепт в избранное."""
         request = self.context.get('request')
-
-        # Проверяем, аутентифицирован ли пользователь
-        if not request or not request.user.is_authenticated:
-            return False
-
-        # Если пользователь аутент., проверяем, есть ли рецепт в избранном
-        favorite = Favorite.objects.filter(
-            user=request.user, recipe=obj).exists()
-        return favorite
+        return bool(
+            request and
+            request.user.is_authenticated and
+            Favorite.objects.filter(
+                user=request.user, recipe=obj).exists()
+        )
 
     def get_is_in_shopping_cart(self, obj):
         """Проверяет, добавлен ли рецепт в корзину покупок."""
