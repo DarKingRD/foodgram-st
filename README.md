@@ -7,33 +7,23 @@
 ```bash
 git clone https://github.com/DarKingRD/foodgram-st.git
 ```
-
-2. Перейдите в директорию `infra`:
+2. Перейдите в директорию `infra` и создайте файл `.env` на примере `.env.example`
 ```bash
-cd infra
+cd foodgram-st/infra
+touch .env
 ```
-
-3. Создайте файл `.env` в директории `infra`, похожий на  `.env.example`:
-```bash
-cp infra/.env.example infra/.env
-```
-
-4. Запустите проект:
+3. В директории `infra` Запустите проект:
 ```bash
 docker-compose up
-```
-
-5. Создайте суперпользователя:
+``` 
+4. Создайте суперпользователя:
 ```bash
 docker-compose run backend python manage.py createsuperuser
 ```
-
-## Данные
-
-В файле `.env` параметр `LOAD_TEST_DATA=1` позволяет загрузить тестовые данные при запуске. (Сами тестовые данные находятся в backend/test_data.json)
-
-Также вы можете зайти в админ панель и загрузить ингридиенты нажав на "Импорт" и выбрав по пути data/ingredients.csv.
-
+5. Заполните базу ингредиентами и тестовыми данными:
+```bash
+docker-compose exec backend python manage.py load_ingredients
+```
 ## Доступ к приложению
 
 - Веб-интерфейс: [Localhost](http://localhost/)
