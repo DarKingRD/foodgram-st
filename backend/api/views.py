@@ -127,7 +127,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         # Получаем перечень рецептов
         recipes = Recipe.objects.filter(
-            shoppingcart__user=user).values('name', 'author__username')
+            shoppingcart__user=user)   # у рец. нет, а у shopcart user - есть
 
         shopping_cart_text = render_shopping_cart(user, ingredients, recipes)
 
@@ -154,19 +154,6 @@ class UserViewSet(DjoserUserViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = "id"  # Используем ID для поиска пользователей
-
-    def get_object(self):
-        """Возвращает текущего пользователя при вызове me."""
-        if self.action == "me":
-            return self.request.user
-        return super().get_object()
-
-    @action(detail=False,
-            methods=['get'],
-            permission_classes=[permissions.IsAuthenticated])
-    def me(self, request):
-        """Получение данных текущего пользователя."""
-        return self.retrieve(request)
 
     @action(detail=False, methods=['put', 'delete'], permission_classes=[
         permissions.IsAuthenticated], url_path='me/avatar')

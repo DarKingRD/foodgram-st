@@ -37,7 +37,7 @@ class UserSerializer(DjoserUserSerializer):
     def get_is_subscribed(self, author):
         """Проверяет, подписан ли текущий пользователь на автора."""
         request = self.context.get('request')
-        return bool(
+        return (
             request and
             request.user.is_authenticated and
             Subscription.objects.filter(
@@ -129,7 +129,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         """Проверяет, добавлен ли рецепт в избранное."""
         request = self.context.get('request')
-        return bool(
+        return (
             request and
             request.user.is_authenticated and
             Favorite.objects.filter(
@@ -139,13 +139,12 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj):
         """Проверяет, добавлен ли рецепт в корзину покупок."""
         request = self.context.get('request')
-
-        if not request or not request.user.is_authenticated:
-            return False
-
-        shoppingcart = ShoppingCart.objects.filter(
-            user=request.user, recipe=obj).exists()
-        return shoppingcart
+        return (
+            request and
+            request.user.is_authenticated and
+            ShoppingCart.objects.filter(
+                user=request.user, recipe=obj).exists()
+        )
 
     def create(self, validated_data):
         """Создаёт рецепт и связанные ингредиенты."""

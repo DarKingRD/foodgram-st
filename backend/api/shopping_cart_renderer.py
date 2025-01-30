@@ -17,7 +17,7 @@ def render_shopping_cart(user, ingredients, recipes):
 
     # Формируем список рецептов с автором
     recipe_lines = [
-        f"- {recipe['name']} (Автор: {recipe['author__username']})"
+        f"- {recipe.name} (@{recipe.author.username})"
         for recipe in recipes
     ]
 

@@ -29,7 +29,7 @@ class SiteUser(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ['first_name', 'last_name']
+        ordering = ['username']
 
     def full_name(self):
         return f'{self.first_name} {self.last_name}'.strip()
@@ -87,8 +87,8 @@ class Recipe(models.Model):
         ordering = ['-date_published']
 
     def get_absolute_url(self):
-        return f'http://localhost:3000/recipes/{self.pk}'
-    
+        return f'/recipes/{self.pk}'
+
     def __str__(self):
         return self.name
 
@@ -109,28 +109,29 @@ class BaseUserRecipeRelation(models.Model):
     class Meta:
         abstract = True
 
+        def __init__(cls, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            cls._meta.constraints = [
+                models.UniqueConstraint(
+                    fields=['user', 'recipe'],
+                    name=f'unique_{cls.__name__.lower()}_user_recipe'
+                )
+            ]
+
     def __str__(self):
         return f'{self.user.username} -> {self.recipe.name}'
 
 
 # Модель избранного
 class Favorite(BaseUserRecipeRelation):
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'recipe'],
-                                    name='unique__favorite_user_recipe')
-        ]
+    class Meta(BaseUserRecipeRelation.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
 
 # Модель корзины
 class ShoppingCart(BaseUserRecipeRelation):
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'recipe'],
-                                    name='unique_cart_user_recipe')
-        ]
+    class Meta(BaseUserRecipeRelation.Meta):
         verbose_name = 'Корзина покупок'
         verbose_name_plural = 'Корзины покупок'
 
@@ -145,7 +146,7 @@ class Subscription(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='author',
+        related_name='authors',
         verbose_name='Автор')
 
     class Meta:
