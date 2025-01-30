@@ -15,14 +15,18 @@ touch .env
 3. В директории `infra` Запустите проект:
 ```bash
 docker-compose up
-``` 
-4. Создайте суперпользователя:
+```
+4. Выполните миграции:
+```bash
+docker-compose exec backend python manage.py migrate
+```
+5. Создайте суперпользователя:
 ```bash
 docker-compose run backend python manage.py createsuperuser
 ```
 5. Заполните базу ингредиентами (ингредиенты загружаются из `data/ingredients.json`, при помощи команды `python manage.py load_ingredients`):
 ```bash
-docker-compose exec backend python manage.py load_ingredients
+docker-compose exec backend python manage.py import_ingredients
 ```
 ## Доступ к приложению
 
