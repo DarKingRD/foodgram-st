@@ -24,7 +24,7 @@ docker-compose exec backend python manage.py migrate
 ```bash
 docker-compose run backend python manage.py createsuperuser
 ```
-6. Заполните базу ингредиентами и тестовыми данными:
+6. Заполните базу ингредиентами:
 ```bash
 docker-compose exec backend python manage.py load_ingredients
 ```
