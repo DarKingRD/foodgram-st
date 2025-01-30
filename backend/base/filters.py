@@ -19,6 +19,7 @@ class CookingTimeFilter(admin.SimpleListFilter):
 
         # Определяем пороги на основе этих бинов
         fast_time, slow_time = int(bins[1]), int(bins[2])
+        #  без int выдаёт не целые числа, что неудобно
 
         return [
             ((0, fast_time), f'быстрее {fast_time} мин ({counts[0]})'),

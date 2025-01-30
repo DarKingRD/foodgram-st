@@ -20,7 +20,7 @@ docker-compose up
 ```bash
 docker-compose run backend python manage.py createsuperuser
 ```
-5. Заполните базу ингредиентами и тестовыми данными:
+5. Заполните базу ингредиентами (ингредиенты загружаются из `data/ingredients.json`, при помощи команды `python manage.py load_ingredients`):
 ```bash
 docker-compose exec backend python manage.py load_ingredients
 ```
