@@ -7,7 +7,7 @@ coreschema==0.0.4
 cryptography==44.0.0
 defusedxml==0.8.0rc2
 diff-match-patch==20241021
-Django==4.2.7
+Django==4.2.29
 django-cors-headers==4.3.1
 django-import-export==3.3.0
 django-templated-mail==1.1.1
